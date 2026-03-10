@@ -19,17 +19,18 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-export default function Analytics() {
-  // Generate heatmap-like data
-  const heatData = Array.from({ length: 7 }, (_, day) =>
-    Array.from({ length: 24 }, (_, hour) => ({
-      day,
-      hour,
-      value: Math.floor(Math.random() * 100 + (hour >= 7 && hour <= 9 ? 40 : hour >= 16 && hour <= 18 ? 35 : 0)),
-    }))
-  ).flat();
+// Generate heatmap-like data once outside the component to prevent jiggling on every render
+const heatData = Array.from({ length: 7 }, (_, day) =>
+  Array.from({ length: 24 }, (_, hour) => ({
+    day,
+    hour,
+    value: Math.floor(Math.random() * 100 + (hour >= 7 && hour <= 9 ? 40 : hour >= 16 && hour <= 18 ? 35 : 0)),
+  }))
+).flat();
 
-  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export default function Analytics() {
 
   return (
     <div className="space-y-6">
