@@ -37,11 +37,11 @@ export const intersections: Intersection[] = [
 ];
 
 export const emergencyVehicles: EmergencyVehicle[] = [
-  { id: 'EMV-101', type: 'Ambulance', currentLocation: 'Main St & 1st Ave', destination: 'City Hospital', status: 'En route', eta: 4, distance: 3.2, routeIntersections: ['INT-001', 'INT-002', 'INT-003'] },
-  { id: 'EMV-102', type: 'Fire', currentLocation: 'Elm St & Oak Ave', destination: 'Oak Ave Fire Zone', status: 'En route', eta: 7, distance: 5.1, routeIntersections: ['INT-004', 'INT-006', 'INT-009'] },
-  { id: 'EMV-103', type: 'Police', currentLocation: 'Cedar Blvd & Pine Rd', destination: 'Downtown Station', status: 'En route', eta: 3, distance: 2.0, routeIntersections: ['INT-005', 'INT-007'] },
-  { id: 'EMV-104', type: 'Ambulance', currentLocation: 'Harbor Blvd & Dock St', destination: 'Harbor Medical', status: 'Completed', eta: 0, distance: 0, routeIntersections: [] },
-  { id: 'EMV-105', type: 'Fire', currentLocation: 'Market St & Commerce Dr', destination: 'Warehouse District', status: 'En route', eta: 9, distance: 6.8, routeIntersections: ['INT-012', 'INT-010', 'INT-008'] },
+  { id: 'EMV-101', type: 'Ambulance', currentLocation: 'ITO Intersection', destination: 'AIIMS Hospital', status: 'En route', eta: 6, distance: 4.8, routeIntersections: ['INT-001', 'INT-007', 'INT-011'] },
+  { id: 'EMV-102', type: 'Fire', currentLocation: 'Karol Bagh Crossing', destination: 'Connaught Place', status: 'En route', eta: 8, distance: 5.5, routeIntersections: ['INT-004', 'INT-002', 'INT-006'] },
+  { id: 'EMV-103', type: 'Police', currentLocation: 'Nehru Place Flyover', destination: 'Sarai Kale Khan', status: 'En route', eta: 3, distance: 2.2, routeIntersections: ['INT-005', 'INT-008'] },
+  { id: 'EMV-104', type: 'Ambulance', currentLocation: 'Dhaula Kuan', destination: 'Safdarjung Hospital', status: 'Completed', eta: 0, distance: 0, routeIntersections: [] },
+  { id: 'EMV-105', type: 'Fire', currentLocation: 'Kashmere Gate ISBT', destination: 'Chandni Chowk', status: 'En route', eta: 5, distance: 3.1, routeIntersections: ['INT-012', 'INT-003'] },
 ];
 
 export const trafficFlowData = Array.from({ length: 24 }, (_, i) => ({
