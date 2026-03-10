@@ -22,18 +22,18 @@ export interface EmergencyVehicle {
 }
 
 export const intersections: Intersection[] = [
-  { id: 'INT-001', name: 'Main St & 1st Ave', lat: 40.7128, lng: -74.006, vehicleCount: 45, density: 'high', signal: 'red', signalTiming: 30, waitingTime: 42 },
-  { id: 'INT-002', name: 'Broadway & 5th St', lat: 40.7138, lng: -74.008, vehicleCount: 22, density: 'medium', signal: 'green', signalTiming: 25, waitingTime: 18 },
-  { id: 'INT-003', name: 'Park Ave & 3rd St', lat: 40.7148, lng: -74.004, vehicleCount: 8, density: 'low', signal: 'green', signalTiming: 20, waitingTime: 5 },
-  { id: 'INT-004', name: 'Elm St & Oak Ave', lat: 40.7118, lng: -74.010, vehicleCount: 38, density: 'high', signal: 'yellow', signalTiming: 35, waitingTime: 35 },
-  { id: 'INT-005', name: 'Cedar Blvd & Pine Rd', lat: 40.7158, lng: -74.002, vehicleCount: 15, density: 'low', signal: 'green', signalTiming: 22, waitingTime: 8 },
-  { id: 'INT-006', name: 'Maple Dr & River St', lat: 40.7108, lng: -74.012, vehicleCount: 52, density: 'high', signal: 'red', signalTiming: 40, waitingTime: 55 },
-  { id: 'INT-007', name: 'Lake Ave & Hill St', lat: 40.7168, lng: -74.000, vehicleCount: 28, density: 'medium', signal: 'yellow', signalTiming: 28, waitingTime: 22 },
-  { id: 'INT-008', name: 'Valley Rd & Summit Dr', lat: 40.7098, lng: -74.014, vehicleCount: 12, density: 'low', signal: 'green', signalTiming: 18, waitingTime: 6 },
-  { id: 'INT-009', name: 'Harbor Blvd & Dock St', lat: 40.7178, lng: -73.998, vehicleCount: 41, density: 'high', signal: 'red', signalTiming: 32, waitingTime: 48 },
-  { id: 'INT-010', name: 'Airport Rd & Terminal Ave', lat: 40.7088, lng: -74.016, vehicleCount: 19, density: 'medium', signal: 'green', signalTiming: 24, waitingTime: 14 },
-  { id: 'INT-011', name: 'University Ave & College St', lat: 40.7188, lng: -73.996, vehicleCount: 33, density: 'medium', signal: 'yellow', signalTiming: 26, waitingTime: 25 },
-  { id: 'INT-012', name: 'Market St & Commerce Dr', lat: 40.7078, lng: -74.018, vehicleCount: 48, density: 'high', signal: 'red', signalTiming: 38, waitingTime: 50 },
+  { id: 'INT-001', name: 'ITO Intersection', lat: 28.6304, lng: 77.2406, vehicleCount: 58, density: 'high', signal: 'red', signalTiming: 45, waitingTime: 65 },
+  { id: 'INT-002', name: 'Connaught Place Circle', lat: 28.6315, lng: 77.2167, vehicleCount: 42, density: 'high', signal: 'yellow', signalTiming: 40, waitingTime: 48 },
+  { id: 'INT-003', name: 'Chandni Chowk', lat: 28.6506, lng: 77.2334, vehicleCount: 35, density: 'medium', signal: 'green', signalTiming: 30, waitingTime: 22 },
+  { id: 'INT-004', name: 'Karol Bagh Crossing', lat: 28.6519, lng: 77.1907, vehicleCount: 50, density: 'high', signal: 'red', signalTiming: 50, waitingTime: 55 },
+  { id: 'INT-005', name: 'Nehru Place Flyover', lat: 28.5491, lng: 77.2533, vehicleCount: 18, density: 'low', signal: 'green', signalTiming: 25, waitingTime: 8 },
+  { id: 'INT-006', name: 'Rajiv Chowk', lat: 28.6328, lng: 77.2197, vehicleCount: 62, density: 'high', signal: 'red', signalTiming: 55, waitingTime: 72 },
+  { id: 'INT-007', name: 'Moolchand Flyover', lat: 28.5685, lng: 77.2395, vehicleCount: 28, density: 'medium', signal: 'yellow', signalTiming: 32, waitingTime: 25 },
+  { id: 'INT-008', name: 'Sarai Kale Khan', lat: 28.5893, lng: 77.2568, vehicleCount: 14, density: 'low', signal: 'green', signalTiming: 20, waitingTime: 6 },
+  { id: 'INT-009', name: 'Dhaula Kuan', lat: 28.5921, lng: 77.1663, vehicleCount: 46, density: 'high', signal: 'red', signalTiming: 42, waitingTime: 52 },
+  { id: 'INT-010', name: 'Ashram Chowk', lat: 28.5700, lng: 77.2500, vehicleCount: 22, density: 'medium', signal: 'green', signalTiming: 28, waitingTime: 15 },
+  { id: 'INT-011', name: 'AIIMS Flyover', lat: 28.5672, lng: 77.2100, vehicleCount: 33, density: 'medium', signal: 'yellow', signalTiming: 30, waitingTime: 28 },
+  { id: 'INT-012', name: 'Kashmere Gate ISBT', lat: 28.6676, lng: 77.2285, vehicleCount: 55, density: 'high', signal: 'red', signalTiming: 48, waitingTime: 60 },
 ];
 
 export const emergencyVehicles: EmergencyVehicle[] = [
