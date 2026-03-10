@@ -2,13 +2,23 @@ import { intersections, trafficFlowData } from '@/data/mockData';
 import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
 import DensityBar from '@/components/dashboard/DensityBar';
 import { motion } from 'framer-motion';
-import { Camera, Car } from 'lucide-react';
+import { MapPin, Car } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+function getStaticMapUrl(lat: number, lng: number, zoom = 15) {
+  // Using OpenStreetMap static tile via a tile server
+  const x = Math.floor(((lng + 180) / 360) * Math.pow(2, zoom));
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)) / Math.PI) / 2) *
+      Math.pow(2, zoom)
+  );
+  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+}
 
 export default function LiveTraffic() {
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold font-mono-tech neon-text-cyan">Live Traffic Monitoring</h2>
+      <h2 className="text-xl font-bold font-mono-tech neon-text-cyan">Live Traffic Monitoring — Delhi NCR</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {intersections.map((int, i) => (
@@ -25,9 +35,21 @@ export default function LiveTraffic() {
             </div>
             <h3 className="text-sm font-semibold text-foreground truncate">{int.name}</h3>
 
-            {/* Camera placeholder */}
-            <div className="h-20 bg-muted/30 rounded-md flex items-center justify-center border border-border">
-              <Camera className="h-6 w-6 text-muted-foreground/40" />
+            {/* Map tile showing the intersection location */}
+            <div className="h-24 rounded-md overflow-hidden border border-border relative group">
+              <img
+                src={getStaticMapUrl(int.lat, int.lng, 15)}
+                alt={`Map of ${int.name}`}
+                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+              <div className="absolute bottom-1 left-1 flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-primary" />
+                <span className="text-[10px] font-mono-tech text-primary">
+                  {int.lat.toFixed(4)}°N, {int.lng.toFixed(4)}°E
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center justify-between text-xs">
@@ -43,7 +65,7 @@ export default function LiveTraffic() {
       </div>
 
       <div className="glass-card p-4">
-        <span className="text-xs font-mono-tech text-muted-foreground uppercase tracking-wider">Real-Time Traffic Flow</span>
+        <span className="text-xs font-mono-tech text-muted-foreground uppercase tracking-wider">Real-Time Traffic Flow — Delhi</span>
         <div className="mt-4 h-64">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={trafficFlowData}>
