@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { intersections } from '@/data/mockData';
+import { useIntersections } from '@/hooks/useIntersections';
 
 const GRID_SIZE = 6;
 const CELL = 80;
@@ -14,6 +14,7 @@ interface Vehicle {
 }
 
 export default function CityMap({ highlightRoute }: { highlightRoute?: string[] }) {
+  const intersections = useIntersections();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   useEffect(() => {

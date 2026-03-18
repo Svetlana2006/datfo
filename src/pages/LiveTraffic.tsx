@@ -1,4 +1,5 @@
-import { intersections, trafficFlowData } from '@/data/mockData';
+import { trafficFlowData } from '@/data/mockData';
+import { useIntersections } from '@/hooks/useIntersections';
 import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
 import DensityBar from '@/components/dashboard/DensityBar';
 import { motion } from 'framer-motion';
@@ -16,6 +17,7 @@ function getStaticMapUrl(lat: number, lng: number, zoom = 15) {
 }
 
 export default function LiveTraffic() {
+  const intersections = useIntersections();
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold font-mono-tech neon-text-cyan">Live Traffic Monitoring — Delhi NCR</h2>

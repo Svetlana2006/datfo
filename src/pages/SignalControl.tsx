@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { intersections as initialIntersections } from '@/data/mockData';
+import { useIntersections } from '@/hooks/useIntersections';
 import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
 import DensityBar from '@/components/dashboard/DensityBar';
 import { motion } from 'framer-motion';
@@ -8,18 +7,19 @@ import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
 
 export default function SignalControl() {
-  const [data, setData] = useState(initialIntersections.map(i => ({ ...i })));
+  const data = useIntersections();
 
-  const updateTiming = (id: string, val: number) => {
-    setData(prev => prev.map(i => i.id === id ? { ...i, signalTiming: val } : i));
+  const updateTiming = async (id: string, val: number) => {
+    // Note: To persist this natively, a dedicated PUT endpoint should be attached in the backend
+    console.log(`Updated timing for ${id} to ${val}`);
   };
 
-  const overrideSignal = (id: string) => {
-    setData(prev => prev.map(i => {
-      if (i.id !== id) return i;
-      const next = i.signal === 'red' ? 'green' : i.signal === 'green' ? 'yellow' : 'red';
-      return { ...i, signal: next };
-    }));
+  const overrideSignal = async (id: string) => {
+    try {
+      await fetch(`http://localhost:8000/green-corridor?intersection_id=${id}`, { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
