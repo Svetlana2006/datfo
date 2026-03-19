@@ -1,27 +1,48 @@
+# 🚦 DATFO - Smart Traffic Management System
 
-Follow these steps:
+DATFO is a next-generation Traffic Management and Command Center designed to optimize city traffic flow, prioritize emergency vehicles, and provide real-time analytics using a frontend simulation engine.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## ✨ Core Features
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 💻 Command Center Dashboard
+- **Live Traffic Monitoring**: Interactive maps and live tracking of traffic density for various city junctions (Delhi NCR).
+- **Signal Control Panel**: Manual override capabilities, signal timing adjustments, and status grids.
+- **Analytics & Reports**: Real-time charts, congestion heatmaps, and weekly reports using Recharts.
+- **Emergency Tracking**: Monitor and manage "Green Corridors" for emergency vehicles (Ambulance, Fire, Police).
+- **Simulated Engine**: Real-time data, vehicle counts, and emergency anomalies are currently simulated locally via an internal mock data engine.
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🛠️ Technology Stack
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+**Frontend Environment:**
+- **React 18** + **TypeScript**
+- **Vite** (Build Tool)
+- **Tailwind CSS** (Styling & Glassmorphic UI)
+- **Framer Motion** (Micro-animations)
+- **Recharts** (Data Visualization)
+
+---
+
+## 🚀 Getting Started
+
+To run the Command Center dashboard locally on your machine, follow these steps:
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Svetlana2006/datfo.git
+cd datfo
+```
+
+### 2. Install & Start the Application
+Open a terminal in the root directory:
+```bash
+npm install
 npm run dev
 ```
 
-## What technologies are used for this project?
+### 3. Open the Dashboard
+*The local development server will start and the dashboard will be available in your browser at `http://localhost:5173` (or `3000`).*
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
+## 🤝 Contributing
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
