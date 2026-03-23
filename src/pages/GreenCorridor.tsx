@@ -1,44 +1,72 @@
-import { useState } from 'react';
-import { intersections as initialIntersections } from '@/data/mockData';
-import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
-import CityMap from '@/components/dashboard/CityMap';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, CheckCircle, MapPin } from 'lucide-react';
+import CityMap from '@/components/dashboard/CityMap';
+import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { api } from '@/lib/api';
+
+function isPresent<T>(value: T | null | undefined): value is T {
+  return value != null;
+}
 
 export default function GreenCorridor() {
+  const queryClient = useQueryClient();
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [selectedIntersections, setSelectedIntersections] = useState<string[]>([]);
-  const [intersections, setIntersections] = useState(initialIntersections.map(i => ({ ...i })));
+
+  const { data: intersections = [] } = useQuery({
+    queryKey: ['intersections'],
+    queryFn: api.getIntersections,
+    refetchInterval: 4_000,
+  });
+
+  const greenCorridorMutation = useMutation({
+    mutationFn: (route: string[]) =>
+      api.activateGreenCorridor({
+        route,
+        type: 'ambulance',
+        source: intersections.find((entry) => entry.id === route[0])?.name,
+        destination: intersections.find((entry) => entry.id === route.at(-1))?.name,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['intersections'] });
+      queryClient.invalidateQueries({ queryKey: ['traffic'] });
+      queryClient.invalidateQueries({ queryKey: ['signals'] });
+      queryClient.invalidateQueries({ queryKey: ['emergency-events'] });
+    },
+  });
+
+  const orderedRoute = useMemo(
+    () =>
+      selectedIntersections
+        .map((id) => intersections.find((intersection) => intersection.id === id))
+        .filter(isPresent),
+    [intersections, selectedIntersections],
+  );
 
   const toggleIntersection = (id: string) => {
     if (!emergencyMode) return;
 
-    setSelectedIntersections(prev =>
-      prev.includes(id)
-        ? prev.filter(i => i !== id)
-        : [...prev, id]
+    setSelectedIntersections((current) =>
+      current.includes(id)
+        ? current.filter((entry) => entry !== id)
+        : [...current, id],
     );
   };
 
   const applyGreenCorridor = () => {
     if (!emergencyMode || selectedIntersections.length === 0) return;
-
-    setIntersections(prev =>
-      prev.map(i =>
-        selectedIntersections.includes(i.id)
-          ? { ...i, signal: 'green' as const }
-          : i
-      )
-    );
+    greenCorridorMutation.mutate(selectedIntersections);
   };
 
   const clearCorridor = () => {
     setSelectedIntersections([]);
-    setIntersections(initialIntersections.map(i => ({ ...i })));
+    setEmergencyMode(false);
   };
 
   return (
@@ -50,11 +78,7 @@ export default function GreenCorridor() {
             <Label htmlFor="emergency-mode" className="text-sm font-medium">
               Emergency Mode
             </Label>
-            <Switch
-              id="emergency-mode"
-              checked={emergencyMode}
-              onCheckedChange={setEmergencyMode}
-            />
+            <Switch id="emergency-mode" checked={emergencyMode} onCheckedChange={setEmergencyMode} />
           </div>
           {emergencyMode && (
             <motion.div
@@ -75,7 +99,7 @@ export default function GreenCorridor() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Enable Emergency Mode to select intersections for green corridor.
+                Enable Emergency Mode to select a route and activate a backend-managed green corridor.
               </p>
             </div>
           </CardContent>
@@ -83,7 +107,6 @@ export default function GreenCorridor() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Intersection Selection */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-mono-tech">Select Route Intersections</CardTitle>
@@ -112,9 +135,7 @@ export default function GreenCorridor() {
                           <p className="text-xs text-muted-foreground font-mono-tech">{intersection.id}</p>
                         </div>
                       </div>
-                      {isSelected && (
-                        <CheckCircle className="h-4 w-4 text-neon-green" />
-                      )}
+                      {isSelected && <CheckCircle className="h-4 w-4 text-neon-green" />}
                     </div>
                   </motion.button>
                 );
@@ -125,16 +146,12 @@ export default function GreenCorridor() {
               <div className="flex gap-2 pt-4 border-t">
                 <Button
                   onClick={applyGreenCorridor}
-                  disabled={selectedIntersections.length === 0}
+                  disabled={selectedIntersections.length === 0 || greenCorridorMutation.isPending}
                   className="flex-1 bg-neon-green hover:bg-neon-green/90 text-black font-mono-tech"
                 >
-                  Apply Green Corridor
+                  {greenCorridorMutation.isPending ? 'Applying...' : 'Apply Green Corridor'}
                 </Button>
-                <Button
-                  onClick={clearCorridor}
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={clearCorridor} variant="outline" className="flex-1">
                   Clear Selection
                 </Button>
               </div>
@@ -142,18 +159,17 @@ export default function GreenCorridor() {
           </CardContent>
         </Card>
 
-        {/* Map and Status */}
         <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg font-mono-tech">Route Visualization</CardTitle>
             </CardHeader>
             <CardContent>
-              <CityMap highlightRoute={selectedIntersections} />
+              <CityMap highlightRoute={selectedIntersections} liveIntersections={intersections} />
             </CardContent>
           </Card>
 
-          {selectedIntersections.length > 0 && (
+          {orderedRoute.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg font-mono-tech">Green Corridor Status</CardTitle>
@@ -161,25 +177,22 @@ export default function GreenCorridor() {
               <CardContent>
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    {selectedIntersections.length} intersection{selectedIntersections.length !== 1 ? 's' : ''} selected for green corridor
+                    {orderedRoute.length} intersection{orderedRoute.length !== 1 ? 's' : ''} selected for backend corridor activation
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedIntersections.map((id) => {
-                      const intersection = intersections.find(i => i.id === id);
-                      return (
-                        <motion.div
-                          key={id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-neon-green/10 border border-neon-green/30"
-                        >
-                          <MapPin className="h-3 w-3 text-neon-green" />
-                          <span className="text-xs font-mono-tech text-neon-green">
-                            {intersection?.name || id} ● GREEN
-                          </span>
-                        </motion.div>
-                      );
-                    })}
+                    {orderedRoute.map((intersection) => (
+                      <motion.div
+                        key={intersection.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-neon-green/10 border border-neon-green/30"
+                      >
+                        <MapPin className="h-3 w-3 text-neon-green" />
+                        <span className="text-xs font-mono-tech text-neon-green">
+                          {intersection.name} - {intersection.signal.toUpperCase()}
+                        </span>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
               </CardContent>

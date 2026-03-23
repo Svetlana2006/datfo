@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Intersection } from '@/data/mockData';
+import { useEffect, useState } from 'react';
+import type { Intersection } from '@/lib/api';
+
+const trafficUrl = `${import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') ?? '/api'}/traffic`;
 
 export function useIntersections() {
   const [data, setData] = useState<Intersection[]>([]);
@@ -7,16 +9,16 @@ export function useIntersections() {
   useEffect(() => {
     const fetchTraffic = async () => {
       try {
-        const res = await fetch('http://localhost:8000/traffic');
-        const json = await res.json();
+        const response = await fetch(trafficUrl);
+        const json = await response.json();
         if (json.intersections) setData(json.intersections);
-      } catch (e) {
-        console.error('Error fetching traffic data from backend:', e);
+      } catch (error) {
+        console.error('Error fetching traffic data from backend:', error);
       }
     };
 
     fetchTraffic();
-    const interval = setInterval(fetchTraffic, 2000); // Poll every 2 seconds
+    const interval = setInterval(fetchTraffic, 2_000);
     return () => clearInterval(interval);
   }, []);
 

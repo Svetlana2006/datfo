@@ -1,9 +1,8 @@
-import type { EmergencyVehicle, Intersection } from '@/data/mockData';
+import type { EmergencyType, Intersection, TriggerMode } from './api';
 
 export type TrafficLevel = 'low' | 'medium' | 'high';
-export type TriggerMode = 'random-scan' | 'manual-trigger';
 
-export interface SignalOptimizationResult {
+export interface SignalOptimizationPreview {
   endpoint: '/optimize-signal';
   intersectionId: string;
   intersectionName: string;
@@ -16,10 +15,10 @@ export interface SignalOptimizationResult {
   reason: string;
 }
 
-export interface EmergencyDetectionResult {
-  endpoint: '/traffic';
+export interface EmergencyDetectionPreview {
+  endpoint: '/emergency';
   emergency: boolean;
-  type: EmergencyVehicle['type'] | null;
+  type: EmergencyType | null;
   triggerMode: TriggerMode;
   confidence: number;
   action: string;
@@ -35,68 +34,68 @@ export function getOptimizedGreenTime(vehicleCount: number): number {
   const trafficLevel = getTrafficLevel(vehicleCount);
 
   if (trafficLevel === 'high') {
-    return Math.min(75, 45 + Math.round((vehicleCount - 45) / 2));
+    return Math.min(75, 50 + Math.round((vehicleCount - 45) / 2));
   }
 
   if (trafficLevel === 'medium') {
-    return Math.min(40, 28 + Math.round((vehicleCount - 20) / 3));
+    return Math.min(42, 30 + Math.round((vehicleCount - 20) / 4));
   }
 
-  return Math.max(15, 18 + Math.round(vehicleCount / 4));
+  return Math.max(15, 18 + Math.round(vehicleCount / 5));
 }
 
-export function optimizeSignal(intersection: Intersection): SignalOptimizationResult {
-  const trafficLevel = getTrafficLevel(intersection.vehicleCount);
-  const optimizedGreen = getOptimizedGreenTime(intersection.vehicleCount);
+export function optimizeSignal(intersection: Intersection): SignalOptimizationPreview {
+  const trafficLevel = getTrafficLevel(intersection.vehicle_count);
+  const optimizedGreen = getOptimizedGreenTime(intersection.vehicle_count);
   const estimatedWaitAfterOptimization =
     trafficLevel === 'high'
-      ? Math.max(12, intersection.waitingTime - 18)
+      ? Math.max(12, intersection.waiting_time - 18)
       : trafficLevel === 'medium'
-        ? Math.max(8, intersection.waitingTime - 8)
-        : Math.max(4, intersection.waitingTime - 3);
+        ? Math.max(8, intersection.waiting_time - 8)
+        : Math.max(4, intersection.waiting_time - 3);
 
   const reason =
     trafficLevel === 'high'
-      ? 'High traffic volume detected, so green time is extended to clear queued vehicles.'
+      ? `High traffic pressure at ${intersection.name}, extending the green phase to clear queued vehicles.`
       : trafficLevel === 'medium'
-        ? 'Moderate traffic keeps the signal near baseline timing for balanced throughput.'
-        : 'Low traffic detected, so green time is shortened to reduce idle signal time.';
+        ? `Moderate flow at ${intersection.name}, keeping the signal close to baseline timing for balanced throughput.`
+        : `Low traffic at ${intersection.name}, shortening the green phase to avoid idle signal time.`;
 
   return {
     endpoint: '/optimize-signal',
     intersectionId: intersection.id,
     intersectionName: intersection.name,
     trafficLevel,
-    vehicleCount: intersection.vehicleCount,
-    currentGreen: intersection.signalTiming,
+    vehicleCount: intersection.vehicle_count,
+    currentGreen: intersection.signal_timing,
     optimizedGreen,
-    waitingTime: intersection.waitingTime,
+    waitingTime: intersection.waiting_time,
     estimatedWaitAfterOptimization,
     reason,
   };
 }
 
-const emergencyTypes: EmergencyVehicle['type'][] = ['Ambulance', 'Fire', 'Police'];
+const emergencyTypes: EmergencyType[] = ['ambulance', 'fire', 'police'];
 
 export function detectEmergencyVehicle(options: {
   triggerMode: TriggerMode;
   forceEmergency?: boolean;
   randomValue?: number;
-}): EmergencyDetectionResult {
+}): EmergencyDetectionPreview {
   const { triggerMode, forceEmergency = false, randomValue = Math.random() } = options;
 
-  const emergency = forceEmergency || randomValue >= 0.7;
+  const emergency = forceEmergency || randomValue >= 0.72;
   const type = emergency ? emergencyTypes[Math.floor(randomValue * emergencyTypes.length) % emergencyTypes.length] : null;
-  const confidence = emergency ? 92 + Math.round(randomValue * 7) : 18 + Math.round(randomValue * 32);
+  const confidence = emergency ? 92 + Math.round(randomValue * 7) : 20 + Math.round(randomValue * 35);
 
   return {
-    endpoint: '/traffic',
+    endpoint: '/emergency',
     emergency,
     type,
     triggerMode,
     confidence,
     action: emergency
-      ? `Emergency priority enabled for ${type}. Nearby signals should switch to corridor mode.`
-      : 'No emergency vehicle detected. Standard adaptive signal timings remain active.',
+      ? `Emergency priority enabled for ${type}. Prepare a green corridor for the requested route.`
+      : 'No emergency vehicle detected. Continue adaptive signal timings.',
   };
 }

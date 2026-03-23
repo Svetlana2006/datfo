@@ -1,9 +1,21 @@
-import { trafficFlowData, weeklyData } from '@/data/mockData';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
+import { api } from '@/lib/api';
+import { applyEmergencyCounts, buildHeatmapData, buildTrafficFlowData, buildWeeklyCongestion } from '@/lib/analytics';
 
 const tooltipStyle = {
   contentStyle: { background: 'hsl(222 47% 9%)', border: '1px solid hsl(222 30% 18%)', borderRadius: 8, fontSize: 12 },
@@ -19,18 +31,27 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
-// Generate heatmap-like data once outside the component to prevent jiggling on every render
-const heatData = Array.from({ length: 7 }, (_, day) =>
-  Array.from({ length: 24 }, (_, hour) => ({
-    day,
-    hour,
-    value: Math.floor(Math.random() * 100 + (hour >= 7 && hour <= 9 ? 40 : hour >= 16 && hour <= 18 ? 35 : 0)),
-  }))
-).flat();
-
 const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function Analytics() {
+  const { data: history = [] } = useQuery({
+    queryKey: ['traffic-history'],
+    queryFn: api.getTrafficHistory,
+    refetchInterval: 10_000,
+  });
+
+  const { data: emergencyEvents = [] } = useQuery({
+    queryKey: ['emergency-events'],
+    queryFn: api.getEmergencyEvents,
+    refetchInterval: 10_000,
+  });
+
+  const trafficFlowData = useMemo(() => buildTrafficFlowData(history), [history]);
+  const weeklyData = useMemo(
+    () => applyEmergencyCounts(buildWeeklyCongestion(history), emergencyEvents),
+    [history, emergencyEvents],
+  );
+  const heatData = useMemo(() => buildHeatmapData(history), [history]);
 
   return (
     <div className="space-y-6">
@@ -79,29 +100,29 @@ export default function Analytics() {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Congestion Heatmap (Week × Hour)">
+        <ChartCard title="Congestion Heatmap (Week x Hour)">
           <div className="h-full overflow-auto">
-            <div className="grid gap-px" style={{ gridTemplateColumns: `40px repeat(24, 1fr)` }}>
+            <div className="grid gap-px" style={{ gridTemplateColumns: '40px repeat(24, 1fr)' }}>
               <div />
-              {Array.from({ length: 24 }, (_, h) => (
-                <span key={h} className="text-[8px] text-muted-foreground text-center font-mono-tech">{h}</span>
+              {Array.from({ length: 24 }, (_, hour) => (
+                <span key={hour} className="text-[8px] text-muted-foreground text-center font-mono-tech">{hour}</span>
               ))}
-              {dayLabels.map((day, di) => (
-                <>
-                  <span key={`l${di}`} className="text-[10px] text-muted-foreground font-mono-tech flex items-center">{day}</span>
-                  {Array.from({ length: 24 }, (_, hi) => {
-                    const val = heatData.find(d => d.day === di && d.hour === hi)?.value ?? 0;
-                    const opacity = Math.min(val / 100, 1);
+              {dayLabels.map((day, dayIndex) => (
+                <div key={day} className="contents">
+                  <span className="text-[10px] text-muted-foreground font-mono-tech flex items-center">{day}</span>
+                  {Array.from({ length: 24 }, (_, hour) => {
+                    const value = heatData.find((entry) => entry.day === dayIndex && entry.hour === hour)?.value ?? 0;
+                    const opacity = Math.min(value / 100, 1);
                     return (
                       <div
-                        key={`${di}-${hi}`}
+                        key={`${dayIndex}-${hour}`}
                         className="aspect-square rounded-sm"
                         style={{ background: `hsl(186 100% 50% / ${opacity * 0.8})` }}
-                        title={`${day} ${hi}:00 — ${val}%`}
+                        title={`${day} ${hour}:00 - ${value}%`}
                       />
                     );
                   })}
-                </>
+                </div>
               ))}
             </div>
           </div>

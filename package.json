@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "server": "tsx server.ts"
+    "server": "node --experimental-strip-types server.ts",
+    "start": "node --experimental-strip-types server.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

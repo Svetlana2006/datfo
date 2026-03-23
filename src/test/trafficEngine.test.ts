@@ -18,11 +18,16 @@ describe('trafficEngine', () => {
       name: 'Nehru Place Flyover',
       lat: 28.5491,
       lng: 77.2533,
-      vehicleCount: 18,
-      density: 'low',
+      vehicle_count: 18,
+      density: 0.18,
+      density_label: 'low',
       signal: 'green',
-      signalTiming: 25,
-      waitingTime: 8,
+      signal_timing: 25,
+      waiting_time: 8,
+      corridor_active: 0,
+      corridor_group: null,
+      corridor_expires_at: null,
+      last_updated: new Date().toISOString(),
     });
 
     expect(result.endpoint).toBe('/optimize-signal');
@@ -37,7 +42,7 @@ describe('trafficEngine', () => {
       randomValue: 0.2,
     });
 
-    expect(result.endpoint).toBe('/traffic');
+    expect(result.endpoint).toBe('/emergency');
     expect(result.emergency).toBe(true);
     expect(result.type).not.toBeNull();
   });

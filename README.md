@@ -1,56 +1,50 @@
-# 🚦 DATFO - Smart Traffic Management System
+# DATFO
 
-DATFO is a next-generation Traffic Management and Command Center designed to optimize city traffic flow, prioritize emergency vehicles, and provide real-time analytics using a frontend simulation engine.
+DATFO is a smart traffic management dashboard backed by a single Express + SQLite API. The app now ships with one deployable backend that handles live traffic simulation, signal optimization, emergency detection, green corridor activation, signal state control, AI decision output, and persisted event/history storage.
 
-## ✨ Core Features
+## Backend Features
 
-### 💻 Command Center Dashboard
+- `GET /traffic` and `GET /api/traffic`: live traffic snapshot with vehicle counts, density labels, signal timing, and summary metrics
+- `POST /optimize-signal` and `POST /api/optimize-signal`: adaptive signal timing based on traffic level
+- `GET /signals` and `GET /api/signals`: current signal controller state
+- `GET /emergency` and `POST /emergency`: random scan and manual emergency detection flows
+- `POST /green-corridor` and `POST /api/green-corridor`: route-based signal overrides for emergency corridors
+- `GET /ai-decision` and `GET /api/ai-decision`: backend-generated traffic reasoning and confidence
+- `GET /api/traffic-history` and `GET /api/emergency-events`: persisted history in SQLite
 
-- **Live Traffic Monitoring**: Interactive maps and live tracking of traffic density for various city junctions (Delhi NCR).
-- **Signal Control Panel**: Manual override capabilities, signal timing adjustments, and status grids.
-- **Analytics & Reports**: Real-time charts, congestion heatmaps, and weekly reports using Recharts.
-- **Emergency Tracking**: Monitor and manage "Green Corridors" for emergency vehicles (Ambulance, Fire, Police).
-- **Simulated Engine**: Real-time data, vehicle counts, and emergency anomalies are currently simulated locally via an internal mock data engine.
-
-## 🛠️ Technology Stack
-
-**Frontend Environment:**
-
-- **React 18** + ** TypeScript**
-- **Vite** (Build Tool)
-- **Tailwind CSS** (Styling & Glassmorphic UI)
-- **Framer Motion** (Micro-animations)
-- **Recharts** (Data Visualization)
-
----
-
-## 🚀 Getting Started
-
-To run the Command Center dashboard locally on your machine, follow these steps:
-
-### 1. Clone the Repository
-
-```bash
-
-git clone https://github.com/Svetlana2006/datfo.git
-cd datfo
-```
-
-### 2. Install & Start the Application
-
-Open a terminal in the root directory:
+## Local Development
 
 ```bash
 npm install
+npm run server
 npm run dev
 ```
 
-### 3. Open the Dashboard
+- Frontend dev server: `http://localhost:8080`
+- Backend API server: `http://localhost:3001`
+- Vite proxies `/api` requests to the backend in development.
 
-_The local development server will start and the dashboard will be available in your browser at `http://localhost:5173` (or `3000`)._
+## Production Build
 
----
+```bash
+npm run build
+npm start
+```
 
-## 🤝 Contributing
+- `npm start` runs the backend directly with Node 22 type stripping.
+- The Express server also serves the built frontend from `dist/` under the configured base path.
 
-Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
+## Environment
+
+- `PORT`: backend server port, defaults to `3001`
+- `VITE_API_BASE_URL`: optional frontend API base override, defaults to `/api`
+- `VITE_PUBLIC_BASE`: optional frontend router/build base, defaults to `/datfo/` in production and `/` in development
+
+## Verification
+
+```bash
+npm test
+npm run build
+```
+
+The test suite includes backend API integration coverage against a temporary SQLite database plus frontend utility tests.
