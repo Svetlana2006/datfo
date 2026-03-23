@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'url';
 import db from './database.ts';
-import { createTrafficApp } from './backend-core/appFactory.ts';
+import { createTrafficApp } from './appFactory.ts';
 
 const port = Number(process.env.PORT ?? 3001);
 const entryFile = process.argv[1];

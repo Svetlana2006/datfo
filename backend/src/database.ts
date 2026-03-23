@@ -16,7 +16,7 @@ export interface SeedIntersection {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const defaultDbPath = resolve(__dirname, 'traffic.db');
+export const defaultDbPath = resolve(__dirname, '..', 'traffic.db');
 
 export const seededIntersections: SeedIntersection[] = [
   { id: 'INT-001', name: 'ITO Intersection', lat: 28.6304, lng: 77.2406, vehicle_count: 58, waiting_time: 65, signal: 'red', signal_timing: 45 },

@@ -11,8 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "server": "node --experimental-strip-types server.ts",
-    "start": "node --experimental-strip-types server.ts"
+    "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
+    "server": "node --experimental-strip-types backend/src/index.ts",
+    "start": "node --experimental-strip-types backend/src/index.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

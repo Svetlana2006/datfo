@@ -6,8 +6,8 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import type { Server } from 'http';
 import type Database from 'better-sqlite3';
-import { createDatabase } from '../../database';
-import { createTrafficApp } from '../../backend-core/appFactory';
+import { createDatabase } from '../src/database.ts';
+import { createTrafficApp } from '../src/appFactory.ts';
 
 describe('traffic backend api', () => {
   let tempDir: string;

@@ -2,6 +2,34 @@
 
 DATFO is a smart traffic management dashboard backed by a single Express + SQLite API. The app now ships with one deployable backend that handles live traffic simulation, signal optimization, emergency detection, green corridor activation, signal state control, AI decision output, and persisted event/history storage.
 
+## Repository Layout
+
+```text
+backend/
+  src/
+    index.ts
+    appFactory.ts
+    database.ts
+    trafficSystem.ts
+  test/
+    backendApi.test.ts
+src/
+  components/
+  hooks/
+  lib/
+  pages/
+  test/
+tests/
+  e2e/
+    playwright.config.ts
+    playwright-fixture.ts
+```
+
+- `backend/src`: the only backend implementation used by the app
+- `backend/test`: backend integration tests
+- `src`: frontend app code and frontend-focused tests
+- `tests/e2e`: Playwright config and fixture files
+
 ## Backend Features
 
 - `GET /traffic` and `GET /api/traffic`: live traffic snapshot with vehicle counts, density labels, signal timing, and summary metrics
@@ -33,6 +61,7 @@ npm start
 
 - `npm start` runs the backend directly with Node 22 type stripping.
 - The Express server also serves the built frontend from `dist/` under the configured base path.
+- SQLite data is stored at `backend/traffic.db` during local runs.
 
 ## Environment
 
@@ -44,6 +73,7 @@ npm start
 
 ```bash
 npm test
+npm run test:e2e
 npm run build
 ```
 
