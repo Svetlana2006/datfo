@@ -16,7 +16,7 @@ DATFO is a next-generation Traffic Management and Command Center designed to opt
 
 **Frontend Environment:**
 
-- **React 18** + **TypeScript**
+- **React 18** + ** TypeScript**
 - **Vite** (Build Tool)
 - **Tailwind CSS** (Styling & Glassmorphic UI)
 - **Framer Motion** (Micro-animations)
