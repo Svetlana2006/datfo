@@ -20,6 +20,7 @@ const navItems = [
   { title: 'Live Traffic', path: '/live-traffic', icon: Monitor },
   { title: 'Signal Control', path: '/signal-control', icon: Settings2 },
   { title: 'Emergency Corridor', path: '/emergency-corridor', icon: Route },
+  { title: 'Green Corridor', path: '/green-corridor', icon: Activity },
   { title: 'Vehicle Tracking', path: '/emergency-tracking', icon: Truck },
   { title: 'Analytics', path: '/analytics', icon: BarChart3 },
 ];
