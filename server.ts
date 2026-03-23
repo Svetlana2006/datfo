@@ -22,6 +22,39 @@ app.get('/', (req, res) => {
 });
 
 // API Endpoints
+app.get('/api/intersections', (req, res) => {
+  const intersections = db.prepare('SELECT * FROM intersections_state').all();
+  res.json(intersections);
+});
+
+app.post('/api/intersections/:id/signal', (req, res) => {
+  const { id } = req.params;
+  const { signal } = req.body;
+  
+  const stmt = db.prepare('UPDATE intersections_state SET signal = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?');
+  const result = stmt.run(signal, id);
+  
+  if (result.changes > 0) {
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Intersection not found' });
+  }
+});
+
+app.post('/api/intersections/:id/timing', (req, res) => {
+  const { id } = req.params;
+  const { timing } = req.body;
+  
+  const stmt = db.prepare('UPDATE intersections_state SET signal_timing = ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?');
+  const result = stmt.run(timing, id);
+  
+  if (result.changes > 0) {
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Intersection not found' });
+  }
+});
+
 app.get('/api/traffic-history', (req, res) => {
   const history = db.prepare('SELECT * FROM traffic_history ORDER BY timestamp DESC LIMIT 100').all();
   res.json(history);
@@ -74,27 +107,33 @@ app.get('/api/ai-decision', (req, res) => {
 });
 
 // Simulator: Update traffic data every 10 seconds
-const intersections = [
-  { id: 'INT-001', name: 'Rajiv Chowk' },
-  { id: 'INT-002', name: 'ITO Crossing' },
-  { id: 'INT-003', name: 'Dhaula Kuan' },
-  { id: 'INT-004', name: 'AIIMS Flyover' }
-];
-
 setInterval(() => {
-  const int = intersections[Math.floor(Math.random() * intersections.length)];
-  const vehicleCount = Math.floor(Math.random() * 100);
-  const waitingTime = Math.floor(Math.random() * 90);
-  const density = parseFloat((vehicleCount / 100).toFixed(2));
-  const signal = density > 0.7 ? 'red' : (density > 0.4 ? 'yellow' : 'green');
+  const intersections = db.prepare('SELECT * FROM intersections_state').all() as any[];
+  if (intersections.length === 0) return;
 
-  const stmt = db.prepare(`
+  const int = intersections[Math.floor(Math.random() * intersections.length)];
+  
+  // Simulate some changes
+  const vehicleCount = Math.max(0, Math.min(100, int.vehicle_count + Math.floor(Math.random() * 21) - 10));
+  const waitingTime = Math.max(0, Math.min(120, int.waiting_time + Math.floor(Math.random() * 11) - 5));
+  const density = parseFloat((vehicleCount / 100).toFixed(2));
+  
+  // Update current state
+  const updateStmt = db.prepare(`
+    UPDATE intersections_state 
+    SET vehicle_count = ?, waiting_time = ?, density = ?, last_updated = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+  updateStmt.run(vehicleCount, waitingTime, density, int.id);
+
+  // Log to history
+  const historyStmt = db.prepare(`
     INSERT INTO traffic_history (intersection_id, intersection_name, vehicle_count, waiting_time, density, signal)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
-  stmt.run(int.id, int.name, vehicleCount, waitingTime, density, signal);
+  historyStmt.run(int.id, int.name, vehicleCount, waitingTime, density, int.signal);
   
-  console.log(`[Simulator] Logged traffic for ${int.name}: ${vehicleCount} vehicles, ${density} density.`);
+  console.log(`[Simulator] Updated and logged traffic for ${int.name}: ${vehicleCount} vehicles, ${density} density.`);
 }, 10000);
 
 app.listen(port, () => {
