@@ -1,15 +1,85 @@
+import { useState } from 'react';
 import { emergencyVehicles } from '@/data/mockData';
 import { motion } from 'framer-motion';
-import { Ambulance, Flame, ShieldAlert, CheckCircle2, Navigation } from 'lucide-react';
+import { Ambulance, Flame, ShieldAlert, CheckCircle2, Navigation, Siren, ScanSearch } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { detectEmergencyVehicle } from '@/lib/trafficEngine';
 
 const typeIcon = { Ambulance, Fire: Flame, Police: ShieldAlert };
 const typeColor = { Ambulance: 'text-neon-red', Fire: 'text-neon-orange', Police: 'text-neon-blue' };
 
 export default function EmergencyTracking() {
+  const [detectionResult, setDetectionResult] = useState(() =>
+    detectEmergencyVehicle({ triggerMode: 'random-scan', randomValue: 0.25 })
+  );
+
+  const runRandomScan = () => {
+    setDetectionResult(detectEmergencyVehicle({ triggerMode: 'random-scan' }));
+  };
+
+  const triggerEmergencyDemo = () => {
+    setDetectionResult(detectEmergencyVehicle({ triggerMode: 'manual-trigger', forceEmergency: true }));
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold font-mono-tech neon-text-cyan">Emergency Vehicle Tracking</h2>
+
+      <div className="glass-card p-5 space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-mono-tech uppercase tracking-[0.2em] text-primary">Detection demo</p>
+            <h3 className="text-lg font-semibold text-foreground">Merged `/traffic` emergency response</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Use a random scan or force an emergency event for the demo presentation.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={runRandomScan} variant="outline" className="font-mono-tech text-xs">
+              <ScanSearch className="h-4 w-4 mr-2" />
+              Random scan
+            </Button>
+            <Button onClick={triggerEmergencyDemo} className="font-mono-tech text-xs">
+              <Siren className="h-4 w-4 mr-2" />
+              Trigger emergency
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-md border border-border bg-background/40 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">{detectionResult.endpoint}</span>
+              <Badge
+                variant={detectionResult.emergency ? 'default' : 'secondary'}
+                className={detectionResult.emergency ? 'bg-neon-red/10 text-neon-red border-neon-red/30' : ''}
+              >
+                emergency = {String(detectionResult.emergency)}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted-foreground">Trigger mode</p>
+                <p className="font-mono-tech text-foreground">{detectionResult.triggerMode}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Vehicle type</p>
+                <p className="font-mono-tech text-foreground">{detectionResult.type ?? 'None'}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Confidence</p>
+                <p className="font-mono-tech text-foreground">{detectionResult.confidence}%</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">{detectionResult.action}</p>
+          </div>
+
+          <pre className="rounded-md border border-border bg-black/30 p-4 text-xs text-primary overflow-x-auto">
+{JSON.stringify(detectionResult, null, 2)}
+          </pre>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {emergencyVehicles.map((v, i) => {
