@@ -5,6 +5,7 @@ DATFO is a next-generation Traffic Management and Command Center designed to opt
 ## ✨ Core Features
 
 ### 💻 Command Center Dashboard
+
 - **Live Traffic Monitoring**: Interactive maps and live tracking of traffic density for various city junctions (Delhi NCR).
 - **Signal Control Panel**: Manual override capabilities, signal timing adjustments, and status grids.
 - **Analytics & Reports**: Real-time charts, congestion heatmaps, and weekly reports using Recharts.
@@ -14,6 +15,7 @@ DATFO is a next-generation Traffic Management and Command Center designed to opt
 ## 🛠️ Technology Stack
 
 **Frontend Environment:**
+
 - **React 18** + **TypeScript**
 - **Vite** (Build Tool)
 - **Tailwind CSS** (Styling & Glassmorphic UI)
@@ -27,22 +29,28 @@ DATFO is a next-generation Traffic Management and Command Center designed to opt
 To run the Command Center dashboard locally on your machine, follow these steps:
 
 ### 1. Clone the Repository
+
 ```bash
+
 git clone https://github.com/Svetlana2006/datfo.git
 cd datfo
 ```
 
 ### 2. Install & Start the Application
+
 Open a terminal in the root directory:
+
 ```bash
 npm install
 npm run dev
 ```
 
 ### 3. Open the Dashboard
-*The local development server will start and the dashboard will be available in your browser at `http://localhost:5173` (or `3000`).*
+
+_The local development server will start and the dashboard will be available in your browser at `http://localhost:5173` (or `3000`)._
 
 ---
 
 ## 🤝 Contributing
+
 Contributions, issues, and feature requests are welcome! Feel free to check the issues page.

@@ -1,10 +1,13 @@
 import StatCard from '@/components/dashboard/StatCard';
 import CityMap from '@/components/dashboard/CityMap';
 import { Car, AlertTriangle, Route, Clock } from 'lucide-react';
-import { intersections, trafficFlowData } from '@/data/mockData';
+import { trafficFlowData } from '@/data/mockData';
+import { useIntersections } from '@/hooks/useIntersections';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
+  const intersections = useIntersections();
+  if (!intersections || intersections.length === 0) return <div className="p-8 text-cyan-400 font-mono-tech">Connecting to backend...</div>;
   const totalVehicles = intersections.reduce((s, i) => s + i.vehicleCount, 0);
   const congested = intersections.filter((i) => i.density === 'high').length;
   const avgWait = Math.round(intersections.reduce((s, i) => s + i.waitingTime, 0) / intersections.length);

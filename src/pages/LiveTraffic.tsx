@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { intersections, trafficFlowData } from '@/data/mockData';
+import { trafficFlowData } from '@/data/mockData';
+import { useIntersections } from '@/hooks/useIntersections';
 import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
 import DensityBar from '@/components/dashboard/DensityBar';
 import { motion } from 'framer-motion';
@@ -17,12 +18,13 @@ function getStaticMapUrl(lat: number, lng: number, zoom = 15) {
 }
 
 export default function LiveTraffic() {
+  const intersections = useIntersections();
   const [aiDecision, setAiDecision] = useState<{ reason: string; confidence: number } | null>(null);
 
   useEffect(() => {
     const fetchAiDecision = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/ai-decision');
+        const res = await fetch('http://localhost:8000/ai-decision');
         const data = await res.json();
         setAiDecision(data);
       } catch (err) {
@@ -34,7 +36,6 @@ export default function LiveTraffic() {
     const interval = setInterval(fetchAiDecision, 10000); // Fetch every 10s
     return () => clearInterval(interval);
   }, []);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

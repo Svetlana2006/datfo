@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import LiveTraffic from "./pages/LiveTraffic";
 import SignalControl from "./pages/SignalControl";
 import EmergencyCorridor from "./pages/EmergencyCorridor";
+import GreenCorridor from "./pages/GreenCorridor";
 import EmergencyTracking from "./pages/EmergencyTracking";
 import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/live-traffic" element={<LiveTraffic />} />
             <Route path="/signal-control" element={<SignalControl />} />
             <Route path="/emergency-corridor" element={<EmergencyCorridor />} />
+            <Route path="/green-corridor" element={<GreenCorridor />} />
             <Route path="/emergency-tracking" element={<EmergencyTracking />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="*" element={<NotFound />} />
