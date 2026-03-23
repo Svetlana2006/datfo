@@ -1,16 +1,27 @@
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import StatCard from '@/components/dashboard/StatCard';
 import CityMap from '@/components/dashboard/CityMap';
 import { Car, AlertTriangle, Route, Clock } from 'lucide-react';
 import { trafficFlowData } from '@/data/mockData';
-import { useIntersections } from '@/hooks/useIntersections';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
-  const intersections = useIntersections();
-  if (!intersections || intersections.length === 0) return <div className="p-8 text-cyan-400 font-mono-tech">Connecting to backend...</div>;
-  const totalVehicles = intersections.reduce((s, i) => s + i.vehicleCount, 0);
-  const congested = intersections.filter((i) => i.density === 'high').length;
-  const avgWait = Math.round(intersections.reduce((s, i) => s + i.waitingTime, 0) / intersections.length);
+  const { data: intersections = [], isLoading } = useQuery({
+    queryKey: ['intersections'],
+    queryFn: api.getIntersections,
+    refetchInterval: 5000,
+  });
+
+  const totalVehicles = intersections.reduce((s, i) => s + i.vehicle_count, 0);
+  const congested = intersections.filter((i) => i.density > 0.7).length;
+  const avgWait = intersections.length > 0
+    ? Math.round(intersections.reduce((s, i) => s + i.waiting_time, 0) / intersections.length)
+    : 0;
+
+  if (isLoading && intersections.length === 0) {
+    return <div className="flex h-96 items-center justify-center text-muted-foreground animate-pulse">Connecting to Traffic Control System...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -30,7 +41,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <CityMap />
+          <CityMap liveIntersections={intersections} />
         </div>
         <div className="glass-card p-4">
           <span className="text-xs font-mono-tech text-muted-foreground uppercase tracking-wider">Traffic Flow — 24h</span>

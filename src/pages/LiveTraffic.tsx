@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { trafficFlowData } from '@/data/mockData';
-import { useIntersections } from '@/hooks/useIntersections';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
 import DensityBar from '@/components/dashboard/DensityBar';
 import { motion } from 'framer-motion';
 import { MapPin, Car } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { trafficFlowData } from '@/data/mockData';
 
 function getStaticMapUrl(lat: number, lng: number, zoom = 15) {
   // Using OpenStreetMap static tile via a tile server
@@ -18,24 +18,28 @@ function getStaticMapUrl(lat: number, lng: number, zoom = 15) {
 }
 
 export default function LiveTraffic() {
-  const intersections = useIntersections();
-  const [aiDecision, setAiDecision] = useState<{ reason: string; confidence: number } | null>(null);
+  const { data: intersections = [], isLoading: isIntersectionsLoading } = useQuery({
+    queryKey: ['intersections'],
+    queryFn: api.getIntersections,
+    refetchInterval: 5000,
+  });
 
-  useEffect(() => {
-    const fetchAiDecision = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/ai-decision');
-        const data = await res.json();
-        setAiDecision(data);
-      } catch (err) {
-        console.error('Failed to fetch AI decision:', err);
-      }
-    };
+  const { data: aiDecision } = useQuery({
+    queryKey: ['aiDecision'],
+    queryFn: api.getAIDecision,
+    refetchInterval: 10000,
+  });
 
-    fetchAiDecision();
-    const interval = setInterval(fetchAiDecision, 10000); // Fetch every 10s
-    return () => clearInterval(interval);
-  }, []);
+  const getDensityLabel = (d: number): 'low' | 'medium' | 'high' => {
+    if (d > 0.7) return 'high';
+    if (d > 0.3) return 'medium';
+    return 'low';
+  };
+
+  if (isIntersectionsLoading && intersections.length === 0) {
+    return <div className="flex h-96 items-center justify-center text-muted-foreground animate-pulse">Connecting to Traffic Monitoring System...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -93,11 +97,11 @@ export default function LiveTraffic() {
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-1 text-muted-foreground">
                 <Car className="h-3 w-3" />
-                <span className="font-mono-tech">{int.vehicleCount}</span>
+                <span className="font-mono-tech">{int.vehicle_count}</span>
               </div>
-              <span className="text-muted-foreground font-mono-tech">Wait: {int.waitingTime}s</span>
+              <span className="text-muted-foreground font-mono-tech">Wait: {int.waiting_time}s</span>
             </div>
-            <DensityBar density={int.density} />
+            <DensityBar density={getDensityLabel(int.density)} />
           </motion.div>
         ))}
       </div>

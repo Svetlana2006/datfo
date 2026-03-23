@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useIntersections } from '@/hooks/useIntersections';
+import { intersections } from '@/data/mockData';
 
 const GRID_SIZE = 6;
 const CELL = 80;
@@ -13,9 +13,24 @@ interface Vehicle {
   dy: number;
 }
 
-export default function CityMap({ highlightRoute }: { highlightRoute?: string[] }) {
-  const intersections = useIntersections();
+interface Intersection {
+  id: string;
+  name: string;
+  vehicle_count: number;
+  density: number;
+  signal: 'red' | 'yellow' | 'green';
+  waiting_time: number;
+}
+
+export default function CityMap({ 
+  highlightRoute, 
+  liveIntersections 
+}: { 
+  highlightRoute?: string[];
+  liveIntersections?: Intersection[];
+}) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const displayIntersections = liveIntersections || intersections;
 
   useEffect(() => {
     const initial: Vehicle[] = Array.from({ length: 20 }, (_, i) => ({
@@ -43,7 +58,7 @@ export default function CityMap({ highlightRoute }: { highlightRoute?: string[] 
     return () => clearInterval(interval);
   }, []);
 
-  const gridIntersections = intersections.slice(0, GRID_SIZE * 2).map((int, i) => ({
+  const gridIntersections = (displayIntersections || []).slice(0, GRID_SIZE * 2).map((int, i) => ({
     ...int,
     gx: (i % GRID_SIZE) * CELL + CELL / 2 + 20,
     gy: Math.floor(i / GRID_SIZE) * CELL * 2 + CELL + 20,
