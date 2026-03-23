@@ -31,6 +31,7 @@ To run the Command Center dashboard locally on your machine, follow these steps:
 ### 1. Clone the Repository
 
 ```bash
+
 git clone https://github.com/Svetlana2006/datfo.git
 cd datfo
 ```

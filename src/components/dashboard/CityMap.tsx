@@ -29,8 +29,8 @@ export default function CityMap({ highlightRoute }: { highlightRoute?: string[] 
     const interval = setInterval(() => {
       setVehicles((prev) =>
         prev.map((v) => {
-          let nx = v.x + v.dx;
-          let ny = v.y + v.dy;
+          const nx = v.x + v.dx;
+          const ny = v.y + v.dy;
           let ndx = v.dx;
           let ndy = v.dy;
           if (nx < 0 || nx > GRID_SIZE * CELL) ndx = -ndx;
