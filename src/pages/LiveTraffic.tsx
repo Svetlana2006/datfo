@@ -20,19 +20,19 @@ function getStaticMapUrl(lat: number, lng: number, zoom = 15) {
 export default function LiveTraffic() {
   const { data: intersections = [], isLoading: isIntersectionsLoading } = useQuery({
     queryKey: ['intersections'],
-    queryFn: api.getIntersections,
+    queryFn: () => api.getIntersections(),
     refetchInterval: 4_000,
   });
 
   const { data: aiDecision } = useQuery({
     queryKey: ['aiDecision'],
-    queryFn: api.getAIDecision,
+    queryFn: () => api.getAIDecision(),
     refetchInterval: 10_000,
   });
 
   const { data: history = [] } = useQuery({
     queryKey: ['traffic-history'],
-    queryFn: api.getTrafficHistory,
+    queryFn: () => api.getTrafficHistory(),
     refetchInterval: 10_000,
   });
 
@@ -110,15 +110,21 @@ export default function LiveTraffic() {
       <div className="glass-card p-4">
         <span className="text-xs font-mono-tech text-muted-foreground uppercase tracking-wider">Real-Time Traffic Flow - Delhi</span>
         <div className="mt-4 h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trafficFlowData}>
-              <XAxis dataKey="hour" tick={{ fontSize: 10, fill: 'hsl(215 20% 55%)' }} axisLine={false} tickLine={false} interval={3} />
-              <YAxis tick={{ fontSize: 10, fill: 'hsl(215 20% 55%)' }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: 'hsl(222 47% 9%)', border: '1px solid hsl(222 30% 18%)', borderRadius: 8, fontSize: 12 }} />
-              <Line type="monotone" dataKey="vehicles" stroke="hsl(186 100% 50%)" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="avgWait" stroke="hsl(152 100% 45%)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          {trafficFlowData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trafficFlowData}>
+                <XAxis dataKey="hour" tick={{ fontSize: 10, fill: 'hsl(215 20% 55%)' }} axisLine={false} tickLine={false} interval={3} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(215 20% 55%)' }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ background: 'hsl(222 47% 9%)', border: '1px solid hsl(222 30% 18%)', borderRadius: 8, fontSize: 12 }} />
+                <Line type="monotone" dataKey="vehicles" stroke="hsl(186 100% 50%)" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="avgWait" stroke="hsl(152 100% 45%)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-xs text-muted-foreground italic">
+              Aggregating historical traffic data points...
+            </div>
+          )}
         </div>
       </div>
     </div>

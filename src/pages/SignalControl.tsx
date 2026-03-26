@@ -15,7 +15,7 @@ export default function SignalControl() {
 
   const { data: intersections = [], isLoading } = useQuery({
     queryKey: ['intersections'],
-    queryFn: api.getIntersections,
+    queryFn: () => api.getIntersections(),
     refetchInterval: 4_000,
   });
 
