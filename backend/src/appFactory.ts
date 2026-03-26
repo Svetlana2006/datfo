@@ -2,21 +2,26 @@ import cors from 'cors';
 import express, { type Express, type Request, type Response } from 'express';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
+import { EventEmitter } from 'events';
 import type Database from 'better-sqlite3';
 import {
   buildAIDecision,
   buildEmergencyDecision,
   buildTrafficSummary,
-  clamp,
+  tickIntersection,
+} from './trafficSystem.ts';
+import type {
+  EmergencyType,
+  ManagedIntersection,
+  TriggerMode,
+} from './trafficSystem.ts';
+import {
   getDensityLabel,
   getDensityValue,
-  getOptimizedSignalTiming,
-  getSignalOptimizationReason,
-  tickIntersection,
-  type EmergencyType,
-  type ManagedIntersection,
-  type TriggerMode,
-} from './trafficSystem.ts';
+  getOptimizedGreenTime,
+  getOptimizationReason,
+  clamp,
+} from '../../src/lib/trafficRules.ts';
 
 export interface AppFactoryOptions {
   db: Database.Database;
@@ -58,6 +63,7 @@ export function createTrafficApp(options: AppFactoryOptions) {
   const basePath = options.basePath ?? '/datfo';
   const simulationIntervalMs = options.simulationIntervalMs ?? 2_000;
   const staticDir = options.staticDir ?? resolve(process.cwd(), 'dist');
+  const events = new EventEmitter();
 
   app.use(cors());
   app.use(express.json());
@@ -178,19 +184,41 @@ export function createTrafficApp(options: AppFactoryOptions) {
       writeTrafficHistoryBatch(snapshot);
     }
 
+    events.emit('tick', {
+      intersections: nextIntersections,
+      summary: buildTrafficSummary(nextIntersections),
+      timestamp: now.toISOString(),
+    });
+
     return nextIntersections;
   }
 
-  function respondTraffic(_: Request, res: Response) {
+  app.get('/api/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const onTick = (data: any) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    events.on('tick', onTick);
+    req.on('close', () => {
+      events.off('tick', onTick);
+    });
+  });
+
+  app.get('/api/traffic', (_: Request, res: Response) => {
     const intersections = getIntersections();
     res.json({
       intersections,
       summary: buildTrafficSummary(intersections),
       timestamp: new Date().toISOString(),
     });
-  }
+  });
 
-  function respondSignals(_: Request, res: Response) {
+  app.get('/api/signals', (_: Request, res: Response) => {
     const signals = getIntersections().map((intersection) => ({
       id: intersection.id,
       name: intersection.name,
@@ -201,28 +229,7 @@ export function createTrafficApp(options: AppFactoryOptions) {
     }));
 
     res.json({ signals, timestamp: new Date().toISOString() });
-  }
-
-  const route = (
-    method: 'get' | 'post',
-    paths: string[],
-    handler: (req: Request, res: Response) => void,
-  ) => {
-    for (const path of paths) {
-      app[method](path, handler);
-    }
-  };
-
-  app.get('/', (_req, res) => {
-    res.json({
-      status: 'ok',
-      message: 'DATFO traffic backend is running.',
-      routes: ['/traffic', '/signals', '/optimize-signal', '/emergency', '/green-corridor', '/ai-decision'],
-    });
   });
-
-  route('get', ['/traffic', '/api/traffic'], respondTraffic);
-  route('get', ['/signals', '/api/signals'], respondSignals);
 
   app.get('/api/intersections', (_req, res) => {
     res.json(getIntersections());
@@ -244,6 +251,7 @@ export function createTrafficApp(options: AppFactoryOptions) {
     }
 
     res.json({ success: true, intersection: getIntersection(id) });
+    events.emit('manual_update');
   });
 
   app.post('/api/intersections/:id/timing', (req, res) => {
@@ -262,10 +270,11 @@ export function createTrafficApp(options: AppFactoryOptions) {
     }
 
     res.json({ success: true, intersection: getIntersection(id) });
+    events.emit('manual_update');
   });
 
-  route('post', ['/optimize-signal', '/api/optimize-signal'], (req, res) => {
-    const intersectionId = req.body?.intersection_id ?? req.body?.intersectionId ?? req.query.intersection_id;
+  app.post('/api/optimize-signal', (req, res) => {
+    const intersectionId = req.body?.intersection_id ?? req.body?.intersectionId;
     if (typeof intersectionId !== 'string' || !intersectionId) {
       res.status(400).json({ error: 'intersection_id is required.' });
       return;
@@ -277,7 +286,7 @@ export function createTrafficApp(options: AppFactoryOptions) {
       return;
     }
 
-    const optimizedTiming = getOptimizedSignalTiming(intersection.vehicle_count);
+    const optimizedTiming = getOptimizedGreenTime(intersection.vehicle_count);
     const updatedIntersection = {
       ...intersection,
       signal_timing: optimizedTiming,
@@ -301,17 +310,18 @@ export function createTrafficApp(options: AppFactoryOptions) {
       message: 'Signal timing optimized.',
       intersection: updatedIntersection,
       optimized_timing: optimizedTiming,
-      reason: getSignalOptimizationReason(updatedIntersection),
+      reason: getOptimizationReason(updatedIntersection.name, updatedIntersection.vehicle_count),
     });
+    events.emit('manual_update');
   });
 
-  route('get', ['/emergency', '/api/emergency'], (req, res) => {
-    const location = typeof req.query.location === 'string' ? req.query.location : null;
-    const randomValue = typeof req.query.randomValue === 'string' ? Number(req.query.randomValue) : undefined;
+  app.post('/api/emergency/scan', (req, res) => {
+    const location = typeof req.body.location === 'string' ? req.body.location : null;
+    const randomValue = typeof req.body.randomValue === 'number' ? req.body.randomValue : undefined;
     const decision = buildEmergencyDecision({
       trigger_mode: 'random-scan',
       location,
-      randomValue: Number.isFinite(randomValue) ? randomValue : undefined,
+      randomValue,
     });
 
     if (decision.emergency && decision.type) {
@@ -328,9 +338,10 @@ export function createTrafficApp(options: AppFactoryOptions) {
     }
 
     res.json(decision);
+    events.emit('manual_update');
   });
 
-  route('post', ['/emergency', '/api/emergency'], (req, res) => {
+  app.post('/api/emergency', (req, res) => {
     const triggerMode = (req.body?.trigger_mode ?? req.body?.triggerMode ?? 'manual-trigger') as TriggerMode;
     const requestedType = req.body?.type as EmergencyType | undefined;
     const location = (req.body?.location ?? req.body?.source ?? 'manual-console') as string;
@@ -364,9 +375,10 @@ export function createTrafficApp(options: AppFactoryOptions) {
       source,
       destination,
     });
+    events.emit('manual_update');
   });
 
-  route('post', ['/green-corridor', '/api/green-corridor'], (req, res) => {
+  app.post('/api/green-corridor', (req, res) => {
     const routeIds = Array.isArray(req.body?.route)
       ? req.body.route.filter((entry: unknown): entry is string => typeof entry === 'string' && entry.length > 0)
       : [];
@@ -377,8 +389,8 @@ export function createTrafficApp(options: AppFactoryOptions) {
     }
 
     const routeIntersections = routeIds
-      .map((id) => getIntersection(id))
-      .filter((entry): entry is ManagedIntersection => entry !== null);
+      .map((id: string) => getIntersection(id))
+      .filter((entry: ManagedIntersection | null): entry is ManagedIntersection => entry !== null);
 
     if (routeIntersections.length !== routeIds.length) {
       res.status(404).json({ error: 'One or more intersections were not found.' });
@@ -395,7 +407,7 @@ export function createTrafficApp(options: AppFactoryOptions) {
       }
     });
 
-    const updatedRoute = routeIntersections.map((intersection) => ({
+    const updatedRoute = routeIntersections.map((intersection: ManagedIntersection) => ({
       ...intersection,
       signal: 'green' as const,
       signal_timing: 60,
@@ -423,6 +435,7 @@ export function createTrafficApp(options: AppFactoryOptions) {
       route: updatedRoute,
       expires_at: corridorExpiresAt,
     });
+    events.emit('manual_update');
   });
 
   app.get('/api/traffic-history', (req, res) => {
@@ -430,62 +443,12 @@ export function createTrafficApp(options: AppFactoryOptions) {
     res.json(getTrafficHistory(Number.isFinite(limit) ? clamp(limit, 1, 1000) : 200));
   });
 
-  app.post('/api/traffic-history', (req, res) => {
-    const { intersection_id, intersection_name, vehicle_count, waiting_time, density, density_label, signal } = req.body;
-
-    if (
-      typeof intersection_id !== 'string' ||
-      typeof intersection_name !== 'string' ||
-      typeof vehicle_count !== 'number' ||
-      typeof waiting_time !== 'number' ||
-      typeof density !== 'number' ||
-      typeof signal !== 'string'
-    ) {
-      res.status(400).json({ error: 'Invalid traffic history payload.' });
-      return;
-    }
-
-    insertTrafficHistory.run(
-      intersection_id,
-      intersection_name,
-      vehicle_count,
-      waiting_time,
-      density,
-      density_label ?? getDensityLabel(vehicle_count),
-      signal,
-    );
-
-    res.status(201).json({ success: true });
-  });
-
   app.get('/api/emergency-events', (req, res) => {
     const limit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 100;
     res.json(getEmergencyEvents(Number.isFinite(limit) ? clamp(limit, 1, 1000) : 100));
   });
 
-  app.post('/api/emergency-events', (req, res) => {
-    const { type, location, severity, trigger_mode, source, destination, route, active } = req.body;
-
-    if (typeof type !== 'string' || typeof location !== 'string' || typeof severity !== 'string') {
-      res.status(400).json({ error: 'Invalid emergency event payload.' });
-      return;
-    }
-
-    insertEmergencyEvent.run(
-      type,
-      location,
-      severity,
-      typeof trigger_mode === 'string' ? trigger_mode : 'manual-trigger',
-      typeof source === 'string' ? source : null,
-      typeof destination === 'string' ? destination : null,
-      JSON.stringify(Array.isArray(route) ? route : []),
-      active === false ? 0 : 1,
-    );
-
-    res.status(201).json({ success: true });
-  });
-
-  route('get', ['/ai-decision', '/api/ai-decision'], (req, res) => {
+  app.get('/api/ai-decision', (req, res) => {
     const intersectionId = typeof req.query.intersection_id === 'string' ? req.query.intersection_id : null;
     res.json(buildAIDecision(getIntersections(), intersectionId));
   });
@@ -499,7 +462,7 @@ export function createTrafficApp(options: AppFactoryOptions) {
 
   if (existsSync(staticDir)) {
     app.use(basePath, express.static(staticDir));
-    app.get(`${basePath}/*splat`, (_req, res) => {
+    app.get(new RegExp(`^${basePath}`), (_req, res) => {
       res.sendFile(resolve(staticDir, 'index.html'));
     });
   }

@@ -1,6 +1,12 @@
-import type { EmergencyType, Intersection, TriggerMode } from './api';
+import type { EmergencyType, Intersection, TriggerMode, DensityLabel, SignalState } from './api';
+export type { DensityLabel, SignalState, EmergencyType, TriggerMode };
+import {
+  getDensityLabel as getTrafficLevel,
+  getOptimizedGreenTime,
+  getOptimizationReason
+} from './trafficRules';
 
-export type TrafficLevel = 'low' | 'medium' | 'high';
+export type TrafficLevel = DensityLabel;
 
 export interface SignalOptimizationPreview {
   endpoint: '/optimize-signal';
@@ -24,26 +30,6 @@ export interface EmergencyDetectionPreview {
   action: string;
 }
 
-export function getTrafficLevel(vehicleCount: number): TrafficLevel {
-  if (vehicleCount >= 45) return 'high';
-  if (vehicleCount >= 20) return 'medium';
-  return 'low';
-}
-
-export function getOptimizedGreenTime(vehicleCount: number): number {
-  const trafficLevel = getTrafficLevel(vehicleCount);
-
-  if (trafficLevel === 'high') {
-    return Math.min(75, 50 + Math.round((vehicleCount - 45) / 2));
-  }
-
-  if (trafficLevel === 'medium') {
-    return Math.min(42, 30 + Math.round((vehicleCount - 20) / 4));
-  }
-
-  return Math.max(15, 18 + Math.round(vehicleCount / 5));
-}
-
 export function optimizeSignal(intersection: Intersection): SignalOptimizationPreview {
   const trafficLevel = getTrafficLevel(intersection.vehicle_count);
   const optimizedGreen = getOptimizedGreenTime(intersection.vehicle_count);
@@ -53,13 +39,6 @@ export function optimizeSignal(intersection: Intersection): SignalOptimizationPr
       : trafficLevel === 'medium'
         ? Math.max(8, intersection.waiting_time - 8)
         : Math.max(4, intersection.waiting_time - 3);
-
-  const reason =
-    trafficLevel === 'high'
-      ? `High traffic pressure at ${intersection.name}, extending the green phase to clear queued vehicles.`
-      : trafficLevel === 'medium'
-        ? `Moderate flow at ${intersection.name}, keeping the signal close to baseline timing for balanced throughput.`
-        : `Low traffic at ${intersection.name}, shortening the green phase to avoid idle signal time.`;
 
   return {
     endpoint: '/optimize-signal',
@@ -71,7 +50,7 @@ export function optimizeSignal(intersection: Intersection): SignalOptimizationPr
     optimizedGreen,
     waitingTime: intersection.waiting_time,
     estimatedWaitAfterOptimization,
-    reason,
+    reason: getOptimizationReason(intersection.name, intersection.vehicle_count),
   };
 }
 

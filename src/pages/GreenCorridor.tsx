@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { AlertTriangle, CheckCircle, MapPin } from 'lucide-react';
@@ -22,8 +22,13 @@ export default function GreenCorridor() {
   const { data: intersections = [] } = useQuery({
     queryKey: ['intersections'],
     queryFn: api.getIntersections,
-    refetchInterval: 4_000,
   });
+
+  useEffect(() => {
+    return api.subscribeToEvents((data) => {
+      queryClient.setQueryData(['intersections'], data.intersections);
+    });
+  }, [queryClient]);
 
   const greenCorridorMutation = useMutation({
     mutationFn: (route: string[]) =>

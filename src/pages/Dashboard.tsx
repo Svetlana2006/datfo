@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Car, AlertTriangle, Route, Clock } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import StatCard from '@/components/dashboard/StatCard';
@@ -8,11 +8,19 @@ import { api } from '@/lib/api';
 import { buildTrafficFlowData, summarizeLiveTraffic } from '@/lib/analytics';
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
+
   const { data: traffic, isLoading } = useQuery({
     queryKey: ['traffic'],
     queryFn: api.getTraffic,
-    refetchInterval: 4_000,
   });
+
+  useEffect(() => {
+    return api.subscribeToEvents((data) => {
+      queryClient.setQueryData(['traffic'], data);
+      queryClient.setQueryData(['intersections'], data.intersections);
+    });
+  }, [queryClient]);
 
   const { data: history = [] } = useQuery({
     queryKey: ['traffic-history'],

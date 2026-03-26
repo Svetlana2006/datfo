@@ -1,12 +1,11 @@
+import { type SignalState, type DensityLabel, type EmergencyType, type TriggerMode } from './trafficRules';
+
+export type { SignalState, DensityLabel, EmergencyType, TriggerMode };
+
 const configuredBase = import.meta.env.VITE_API_BASE_URL?.trim();
 const API_BASE_URL = configuredBase
   ? configuredBase.replace(/\/$/, '')
   : '/api';
-
-export type SignalState = 'red' | 'yellow' | 'green';
-export type DensityLabel = 'low' | 'medium' | 'high';
-export type EmergencyType = 'ambulance' | 'fire' | 'police';
-export type TriggerMode = 'random-scan' | 'manual-trigger';
 
 export interface Intersection {
   id: string;
@@ -155,13 +154,13 @@ export const api = {
     source?: string;
     destination?: string;
   }) =>
-    request<EmergencyDetectionResult>('/emergency', {
-      method: payload ? 'POST' : 'GET',
+    request<EmergencyDetectionResult>(payload ? '/emergency' : '/emergency/scan', {
+      method: 'POST',
       headers: payload ? { 'Content-Type': 'application/json' } : undefined,
       body: payload ? JSON.stringify(payload) : undefined,
     }),
 
-  getEmergencyScan: () => request<EmergencyDetectionResult>('/emergency'),
+  getEmergencyScan: () => request<EmergencyDetectionResult>('/emergency/scan', { method: 'POST' }),
 
   activateGreenCorridor: (payload: {
     route: string[];
@@ -181,4 +180,12 @@ export const api = {
 
   getAIDecision: (intersectionId?: string) =>
     request<AIDecision>(intersectionId ? `/ai-decision?intersection_id=${encodeURIComponent(intersectionId)}` : '/ai-decision'),
+
+  subscribeToEvents: (onData: (data: TrafficSnapshot) => void) => {
+    const eventSource = new EventSource(`${API_BASE_URL}/events`);
+    eventSource.onmessage = (event) => {
+      onData(JSON.parse(event.data));
+    };
+    return () => eventSource.close();
+  },
 };

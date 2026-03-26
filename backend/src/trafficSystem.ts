@@ -1,7 +1,19 @@
-export type DensityLabel = 'low' | 'medium' | 'high';
-export type SignalState = 'red' | 'yellow' | 'green';
-export type EmergencyType = 'ambulance' | 'fire' | 'police';
-export type TriggerMode = 'random-scan' | 'manual-trigger';
+import {
+  getDensityLabel,
+  getDensityValue,
+  getOptimizedGreenTime,
+  getOptimizationReason,
+  getCycledSignal,
+  clamp
+} from '../../src/lib/trafficRules.ts';
+import type {
+  DensityLabel,
+  EmergencyType,
+  SignalState,
+  TriggerMode
+} from '../../src/lib/trafficRules.ts';
+
+export type { DensityLabel, SignalState, EmergencyType, TriggerMode } from '../../src/lib/trafficRules.ts';
 
 export interface ManagedIntersection {
   id: string;
@@ -18,6 +30,7 @@ export interface ManagedIntersection {
   corridor_group: string | null;
   corridor_expires_at: string | null;
   last_updated: string;
+  trend?: number; // Added for momentum-based simulation
 }
 
 export interface EmergencyDecision {
@@ -40,61 +53,6 @@ export interface AIDecision {
 export interface TickOptions {
   now?: Date;
   random?: () => number;
-}
-
-export function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
-}
-
-export function getDensityLabel(vehicleCount: number): DensityLabel {
-  if (vehicleCount >= 45) return 'high';
-  if (vehicleCount >= 20) return 'medium';
-  return 'low';
-}
-
-export function getDensityValue(vehicleCount: number) {
-  return Number(Math.min(0.99, vehicleCount / 100).toFixed(2));
-}
-
-export function getOptimizedSignalTiming(vehicleCount: number) {
-  const level = getDensityLabel(vehicleCount);
-
-  if (level === 'high') {
-    return Math.min(75, 50 + Math.round((vehicleCount - 45) / 2));
-  }
-
-  if (level === 'medium') {
-    return Math.min(42, 30 + Math.round((vehicleCount - 20) / 4));
-  }
-
-  return Math.max(15, 18 + Math.round(vehicleCount / 5));
-}
-
-export function getSignalOptimizationReason(intersection: Pick<ManagedIntersection, 'vehicle_count' | 'density_label' | 'waiting_time' | 'name'>) {
-  if (intersection.density_label === 'high') {
-    return `High traffic pressure at ${intersection.name}, extending the green phase to clear queued vehicles.`;
-  }
-
-  if (intersection.density_label === 'medium') {
-    return `Moderate flow at ${intersection.name}, keeping the signal close to baseline timing for balanced throughput.`;
-  }
-
-  return `Low traffic at ${intersection.name}, shortening the green phase to avoid idle signal time.`;
-}
-
-export function cycleSignal(signal: SignalState, vehicleCount: number): { signal: SignalState; signal_timing: number } {
-  if (signal === 'red') {
-    return { signal: 'green', signal_timing: getOptimizedSignalTiming(vehicleCount) };
-  }
-
-  if (signal === 'green') {
-    return { signal: 'yellow', signal_timing: 5 };
-  }
-
-  return {
-    signal: 'red',
-    signal_timing: clamp(24 + Math.round(vehicleCount / 3), 20, 55),
-  };
 }
 
 function chooseEmergencyType(randomValue: number): EmergencyType {
@@ -137,29 +95,34 @@ export function tickIntersection(intersection: ManagedIntersection, options: Tic
   const corridorExpiresAt = next.corridor_expires_at ? new Date(next.corridor_expires_at) : null;
   const corridorActive = next.corridor_active === 1 && corridorExpiresAt && corridorExpiresAt.getTime() > now.getTime();
 
-  const trafficDelta = Math.floor(random() * 11) - 5;
-  next.vehicle_count = clamp(next.vehicle_count + trafficDelta, 0, 100);
+  // Momentum-based simulation
+  const trend = next.trend ?? (random() > 0.5 ? 1 : -1);
+  const drift = random() > 0.7 ? -trend : trend; // 30% chance to flip trend
+  const delta = Math.floor(random() * 6) * drift;
+
+  next.vehicle_count = clamp(next.vehicle_count + delta, 0, 100);
+  next.trend = drift; // Persist trend for next tick
   next.density_label = getDensityLabel(next.vehicle_count);
   next.density = getDensityValue(next.vehicle_count);
 
   if (corridorActive) {
     next.signal = 'green';
     next.signal_timing = clamp(next.signal_timing - 1, 5, 60);
-    next.waiting_time = clamp(next.waiting_time - 6, 0, 180);
+    next.waiting_time = clamp(next.waiting_time - 6, 0, 240);
   } else {
     next.corridor_active = 0;
     next.corridor_group = null;
     next.corridor_expires_at = null;
 
     if (next.signal === 'green') {
-      next.waiting_time = clamp(next.waiting_time - (next.density_label === 'high' ? 6 : 4), 0, 180);
+      next.waiting_time = clamp(next.waiting_time - (next.density_label === 'high' ? 6 : 4), 0, 240);
     } else {
-      next.waiting_time = clamp(next.waiting_time + (next.density_label === 'high' ? 5 : 3), 0, 180);
+      next.waiting_time = clamp(next.waiting_time + (next.density_label === 'high' ? 5 : 3), 0, 240);
     }
 
     next.signal_timing -= 1;
     if (next.signal_timing <= 0) {
-      const cycled = cycleSignal(next.signal, next.vehicle_count);
+      const cycled = getCycledSignal(next.signal, next.vehicle_count);
       next.signal = cycled.signal;
       next.signal_timing = cycled.signal_timing;
     }
@@ -208,7 +171,7 @@ export function buildAIDecision(intersections: ManagedIntersection[], focusInter
       : `Reduce green time at ${focus.id} and redistribute cycle time to busier corridors.`;
 
   return {
-    reason: getSignalOptimizationReason(focus),
+    reason: getOptimizationReason(focus.name, focus.vehicle_count),
     confidence,
     intersection_id: focus.id,
     recommendation,

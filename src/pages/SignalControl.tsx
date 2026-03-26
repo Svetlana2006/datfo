@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { RotateCcw, Sparkles } from 'lucide-react';
@@ -16,8 +16,13 @@ export default function SignalControl() {
   const { data: intersections = [], isLoading } = useQuery({
     queryKey: ['intersections'],
     queryFn: () => api.getIntersections(),
-    refetchInterval: 4_000,
   });
+
+  useEffect(() => {
+    return api.subscribeToEvents((data) => {
+      queryClient.setQueryData(['intersections'], data.intersections);
+    });
+  }, [queryClient]);
 
   const refreshTrafficState = () => {
     queryClient.invalidateQueries({ queryKey: ['intersections'] });
@@ -117,10 +122,6 @@ export default function SignalControl() {
               </div>
               <p className="text-sm text-muted-foreground">{optimizationPreview.reason}</p>
             </div>
-
-            <pre className="rounded-md border border-border bg-black/30 p-4 text-xs text-primary overflow-x-auto">
-{JSON.stringify(optimizationPreview, null, 2)}
-            </pre>
           </div>
         </div>
       )}

@@ -113,10 +113,6 @@ export default function EmergencyTracking() {
               </div>
               <p className="text-sm text-muted-foreground">{detectionResult.action}</p>
             </div>
-
-            <pre className="rounded-md border border-border bg-black/30 p-4 text-xs text-primary overflow-x-auto">
-{JSON.stringify(detectionResult, null, 2)}
-            </pre>
           </div>
         )}
       </div>

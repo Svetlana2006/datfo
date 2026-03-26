@@ -1,80 +1,113 @@
-# DATFO
+# 🚦 DATFO: Dynamic Adaptive Traffic Flow Optimization
 
-DATFO is a smart traffic management dashboard backed by a single Express + SQLite API. The app now ships with one deployable backend that handles live traffic simulation, signal optimization, emergency detection, green corridor activation, signal state control, AI decision output, and persisted event/history storage.
+> **Transforming chaotic urban intersections into a choreographed digital symphony.**
 
-## Repository Layout
+DATFO is a next-generation traffic management "Command Center" designed for the modern smart city. It's not just a dashboard; it's a living ecosystem where real-time telemetry, momentum-based simulation, and unified domain logic converge to provide a "flawless" traffic optimization experience.
 
-```text
-backend/
-  src/
-    index.ts
-    appFactory.ts
-    database.ts
-    trafficSystem.ts
-  test/
-    backendApi.test.ts
-src/
-  components/
-  hooks/
-  lib/
-  pages/
-  test/
-tests/
-  e2e/
-    playwright.config.ts
-    playwright-fixture.ts
-```
+---
 
-- `backend/src`: the only backend implementation used by the app
-- `backend/test`: backend integration tests
-- `src`: frontend app code and frontend-focused tests
-- `tests/e2e`: Playwright config and fixture files
+## 🏗️ The Core Pillars
 
-## Backend Features
+### ⚡ Real-Time SSE Infrastructure
+Forget wasteful polling. DATFO is built on a high-performance **Server-Sent Events (SSE)** backbone. Telemetry streams directly from the backend to the frontend with zero latency, ensuring your command center is always in sync with the pulse of the city.
 
-- `GET /traffic` and `GET /api/traffic`: live traffic snapshot with vehicle counts, density labels, signal timing, and summary metrics
-- `POST /optimize-signal` and `POST /api/optimize-signal`: adaptive signal timing based on traffic level
-- `GET /signals` and `GET /api/signals`: current signal controller state
-- `GET /emergency` and `POST /emergency`: random scan and manual emergency detection flows
-- `POST /green-corridor` and `POST /api/green-corridor`: route-based signal overrides for emergency corridors
-- `GET /ai-decision` and `GET /api/ai-decision`: backend-generated traffic reasoning and confidence
-- `GET /api/traffic-history` and `GET /api/emergency-events`: persisted history in SQLite
+### 🧠 Unified Domain Logic
+One rulebook to rule them all. By centralizing traffic physics, signal cycling, and optimization rules in a shared `trafficRules.ts` layer, we've eliminated the "Logic Drift" common in most prototypes. What the backend calculates, the frontend renders—perfectly.
 
-## Local Development
+### 🚔 Emergency Priority Dispatch
+DATFO treats emergencies with the gravity they deserve. Our **Green Corridor** system allows operators to override an entire route's signals with a single command, carving a path for emergency vehicles through even the densest congestion.
 
+### 📈 Momentum-Based Simulation
+Traffic isn't random; it has flow and inertia. Our simulation engine uses a **Trend-Based Momentum Model** that mimics real-world traffic growth and decay, providing a laboratory for signal optimization that feels truly realistic.
+
+---
+
+## 🚀 Key Features
+
+### 📺 Live Monitoring Dashboard
+A high-fidelity view of every junction. Each intersection card features:
+- **3x3 Dynamic Tile Mapping**: Seamlessly view the geographical context of every junction.
+- **Density Telemetry**: Visual HSL-tailored density bars for immediate situation appraisal.
+- **Adaptive Signal Icons**: Real-time signal state tracking with pulse-animations.
+
+### 🚥 Precision Signal Control
+Take direct command or let the system optimize for you:
+- **Manual Overrides**: Toggle signals or adjust timings with immediate backend persistency.
+- **AI Optimization**: Request context-aware tuning that recalculates timings based on current vehicle pressure and waiting time.
+
+### 🚑 Emergency Tracking
+- **Automated Scanning**: Random-momentum scans detect potential emergency vehicles.
+- **Event Logging**: Every emergency is tracked, logged, and persisted in a robust SQLite database for later analysis.
+
+### 📊 Advanced Analytics
+- **Historical Flow Graphing**: Watch trends emerge over a 24-hour window.
+- **Global Stats**: Instantly see total vehicle volume, average wait times, and active emergency corridors across the entire network.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React 18, Vite, Framer Motion (Animations), TailwindCSS, Recharts.
+- **Backend**: Node.js (Express), `better-sqlite3` (Performance-tuned SQLite).
+- **Communication**: EventSource (SSE), RESTful API.
+- **Validation**: TypeScript (Strict Mode), Playwright (E2E), Vitest (Integration).
+
+---
+
+## 🏎️ Getting Started
+
+### 1. Installation
 ```bash
 npm install
+```
+
+### 2. Launching the Command Center
+You'll need two terminals for development:
+```bash
+# Terminal A: Start the Traffic Engine (API & Simulation)
 npm run server
+
+# Terminal B: Start the Frontend UI
 npm run dev
 ```
 
-- Frontend dev server: `http://localhost:8080`
-- Backend API server: `http://localhost:3001`
-- Vite proxies `/api` requests to the backend in development.
+### 3. Accessing the UI
+- **Dev URL**: `http://localhost:8080/datfo/`
+- **Dashboard**: `http://localhost:8080/datfo/dashboard`
 
-## Production Build
+---
 
+## 📡 API Reference
+
+### Real-Time Flux
+- `GET /api/events` - The heartbeat of the system (SSE Stream).
+
+### Intersections & Signals
+- `GET /api/traffic` - Full network snapshot.
+- `GET /api/signals` - Minimal signal state list.
+- `POST /api/intersections/:id/signal` - Manual state override.
+- `POST /api/intersections/:id/timing` - Precision green-phase adjustment.
+
+### Intelligence & Logic
+- `POST /api/optimize-signal` - Execute AI-driven cycle optimization.
+- `GET /api/ai-decision` - Retrieve reasoning for the latest system recommendation.
+
+### Emergency Services
+- `POST /api/emergency/scan` - Trigger a network-wide detection scan.
+- `POST /api/emergency` - Force a manual emergency event.
+- `POST /api/green-corridor` - Activate a multi-junction priority path.
+
+---
+
+## 🛡️ Production Readiness
+
+DATFO is designed to be served as a single consolidated package:
 ```bash
 npm run build
 npm start
 ```
+The Express server will serve the production-built frontend from `dist/` while maintaining the SQLite database at `backend/traffic.db`.
 
-- `npm start` runs the backend directly with Node 22 type stripping.
-- The Express server also serves the built frontend from `dist/` under the configured base path.
-- SQLite data is stored at `backend/traffic.db` during local runs.
+---
 
-## Environment
-
-- `PORT`: backend server port, defaults to `3001`
-- `VITE_API_BASE_URL`: optional frontend API base override, defaults to `/api`
-- `VITE_PUBLIC_BASE`: optional frontend router/build base, defaults to `/datfo/` in production and `/` in development
-
-## Verification
-
-```bash
-npm test
-npm run test:e2e
-npm run build
-```
-
-The test suite includes backend API integration coverage against a temporary SQLite database plus frontend utility tests.
+> **DATFO: Moving people, not just vehicles.**

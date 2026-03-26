@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Car, MapPin } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -8,21 +8,42 @@ import TrafficLightIcon from '@/components/dashboard/TrafficLightIcon';
 import { buildTrafficFlowData } from '@/lib/analytics';
 import { api } from '@/lib/api';
 
-function getStaticMapUrl(lat: number, lng: number, zoom = 15) {
+function getTileCoords(lat: number, lng: number, zoom: number) {
   const x = Math.floor(((lng + 180) / 360) * Math.pow(2, zoom));
   const y = Math.floor(
     ((1 - Math.log(Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)) / Math.PI) / 2) *
       Math.pow(2, zoom),
   );
-  return `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png`;
+  return { x, y };
+}
+
+function getStaticMapGrid(lat: number, lng: number, zoom = 15) {
+  const { x, y } = getTileCoords(lat, lng, zoom);
+  const tiles = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      tiles.push(`https://tile.openstreetmap.org/${zoom}/${x + dx}/${y + dy}.png`);
+    }
+  }
+  return tiles;
 }
 
 export default function LiveTraffic() {
+  const queryClient = useQueryClient();
+
   const { data: intersections = [], isLoading: isIntersectionsLoading } = useQuery({
     queryKey: ['intersections'],
     queryFn: () => api.getIntersections(),
-    refetchInterval: 4_000,
   });
+
+  useEffect(() => {
+    return api.subscribeToEvents((data) => {
+      queryClient.setQueryData(['intersections'], data.intersections);
+      queryClient.setQueryData(['traffic-summary'], data.summary);
+      // Invalidate AI decision to keep it relatively fresh without constant polling
+      queryClient.invalidateQueries({ queryKey: ['aiDecision'] });
+    });
+  }, [queryClient]);
 
   const { data: aiDecision } = useQuery({
     queryKey: ['aiDecision'],
@@ -79,17 +100,28 @@ export default function LiveTraffic() {
             </div>
             <h3 className="text-sm font-semibold text-foreground truncate">{intersection.name}</h3>
 
-            <div className="h-24 rounded-md overflow-hidden border border-border relative group">
-              <img
-                src={getStaticMapUrl(intersection.lat, intersection.lng, 15)}
-                alt={`Map of ${intersection.name}`}
-                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-              <div className="absolute bottom-1 left-1 flex items-center gap-1">
-                <MapPin className="h-3 w-3 text-primary" />
-                <span className="text-[10px] font-mono-tech text-primary">
+            <div className="h-32 rounded-md overflow-hidden border border-border relative group bg-muted">
+              <div className="grid grid-cols-3 w-[300%] h-[300%] -ml-[100%] -mt-[100%] opacity-60 group-hover:opacity-100 transition-opacity duration-500 scale-110">
+                {getStaticMapGrid(intersection.lat, intersection.lng, 15).map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+              <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-primary/20" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 blur-md rounded-full animate-pulse" />
+                  <MapPin className="h-5 w-5 text-primary relative drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                </div>
+              </div>
+              <div className="absolute bottom-1.5 left-2 flex items-center gap-1.5">
+                <span className="text-[10px] font-mono-tech text-primary bg-background/60 px-1.5 py-0.5 rounded border border-primary/20 backdrop-blur-sm">
                   {intersection.lat.toFixed(4)}N, {intersection.lng.toFixed(4)}E
                 </span>
               </div>
